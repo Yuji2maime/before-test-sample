@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# カスタムCSS（落ち着いたブルー系）
+# カスタムCSS（落ち着いたブルー系：当日用と明確に区別）
 st.markdown("""
 <style>
     .day-banner {
@@ -93,7 +93,7 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 # ----------------------------------------------------
-# 補助関数：タイプ判定とスコア計算
+# 補助関数：タイプ判定とシビアなスコア計算
 # ----------------------------------------------------
 def analyze_text_simple(text):
     judging = "Te型（効率・構造化）" if any(w in text for w in ["効率", "計画", "目標", "構造", "成果", "システム"]) else \
@@ -131,15 +131,24 @@ def calculate_scores(text, types_list):
         scores[k] = max(10, min(95, scores[k]))
     return scores
 
-# Gemini安全生成関数（純粋な日本語のみ・長所と短所を織り交ぜたシビアな分析）
+# Gemini安全生成関数（完全日本語・長所短所混在・シビアかつ深い掘り下げプロンプト）
 def generate_gemini_report_day(name, text):
-    prompt = f"""以下の応募者の事前アンケート記述内容を分析し、面接官向けの詳細な事前準備レポートをすべて日本語で作成してください。英語やシステム指示の混入は一切禁止します。
+    prompt = f"""【最重要命令】
+出力テキストには英語を一切使用せず、すべて日本語のみで出力してください。システム指示やプロンプト文面の英語を出力に含めることは厳禁です。
+
+あなたは採用選考の厳格な専門家です。
+以下の応募者の事前アンケート記述内容を深く掘り下げて分析し、長所と短所を織り交ぜたシビアかつ正確な面接準備レポートを作成してください。
 
 【応募者氏名】: {name}
 【記述内容】:
 "{text}"
 
-以下の見出し構成に従い、長所と短所を織り交ぜてシビアかつ深く掘り下げた分析を行ってください。
+【評価・分析ガイドライン】
+1. 長所と短所の厳格なバランス評価: 記述内容から読み取れる長所・強みを認める一方、具体性の不足や理想論への偏り、潜在する短所・リスクを一切の忖度なく厳格に指摘してください。
+2. 記述内容の深い掘り下げ: 単なる自己PRの鵜呑みではなく、言葉の背景にある本人の行動特性、価値観、組織適合上の課題を深く洞察してください。
+3. 面接での化けの皮を剥がす深掘り質問: 面接当日、本人の真価や矛盾を見抜くための鋭い深掘り質問を具体的に提示してください。
+
+以下の見出し構成に従って、すべて日本語で作成してください。
 
 【AI面接事前準備レポート（深掘り質問ガイド）】
 ■ 思考傾向・テキストの評価（長所と短所分析）:
@@ -167,7 +176,7 @@ def generate_gemini_report_day(name, text):
                 model = genai.GenerativeModel(model_name)
                 res = model.generate_content(prompt, generation_config={"temperature": 0.1})
                 if res and hasattr(res, 'text') and res.text:
-                    if any(eng in res.text for eng in ["Applicant", "Goal", "Constraints", "Role:", "Description:"]):
+                    if any(eng in res.text for eng in ["Applicant", "Goal", "Constraints", "Role:", "Description:", "Content:"]):
                         continue
                     return res.text
             except Exception:
