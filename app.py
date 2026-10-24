@@ -122,42 +122,17 @@ def calculate_scores(text, types_list):
 def generate_gemini_report(name, text):
     prompt = f"""
 あなたは採用面接の専門家です。
+※出力は、コード内の見出し等を除き、解説や分析コメントなどは必ずすべて「日本語」で行ってください（英語の使用は厳禁です）。
 以下の応募者の事前アンケート記述内容を評価・分析し、面接官が前日に確認するための「事前準備レポート」を作成してください。
 
-【応募者氏名】: {name}
-【記述内容】:
+【応募者氏名】：{name}
+【記述内容】：
 "{text}"
-
-【出力フォーマット（必ずこの形式で出力してください）】:
-【AI面接事前準備レポート（深掘り質問ガイド）】
-■ 思考傾向・テキストの評価:
-（回答の具体性、論理性、就労意欲、公序良俗・倫理感の観点から評価。不適切な記述や著しい常識の欠如が見られる場合は、その旨と重大な懸念・選考見送り推奨を明確に述べること。）
-
-■ 明日の面接での着眼点・観察ポイント:
-（面接官が確認すべきポイントを2〜3点記述）
-
-■ 明日使える深掘り質問例:
-1. （具体的な質問文1）
-2. （具体的な質問文2）
-
-■ 面接事前準備メモ（面接官の事前メモ欄）:
 """
-    try:
-        available_models = []
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                available_models.append(m.name)
-        for model_name in available_models:
-            try:
-                model = genai.GenerativeModel(model_name)
-                res = model.generate_content(prompt)
-                if res and hasattr(res, 'text') and res.text:
-                    return res.text
-            except Exception:
-                continue
-    except Exception:
-        pass
-
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    response = model.generate_content(prompt)
+    return response.text
+    
     bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
     if any(k in text for k in bad_keywords):
         return (
