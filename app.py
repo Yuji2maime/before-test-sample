@@ -142,13 +142,31 @@ def generate_gemini_report(name, text):
         )
 
     prompt = f"""
-あなたは採用面接の専門家です。
-※出力は、コード内の見出し等を除き、解説や分析コメントなどは必ずすべて「日本語」で行ってください（英語の使用は厳禁です）。
-以下の応募者の事前アンケート記述内容を評価・分析し、面接官が前日に確認するための「事前準備レポート」を作成してください。
+【最重要指示】
+あなたは採用面接のプロフェッショナルです。
+入力された応募者情報と記述内容を分析し、面接官が前日に確認するための「事前準備レポート」を、すべて日本語で作成してください。
+※プロンプトの指示文や英語は絶対に出力に含めないでください。
 
-【応募者氏名】：{name}
-【記述内容】：
+■ 応募者氏名：{name}
+■ 記述内容：
 "{text}"
+
+【出力フォーマット】
+以下の見出しに沿って、具体的な分析結果と面接アドバイスを出力してください。
+
+【AI面接前日準備・質問設計ガイド】
+■ 思考傾向・テキストの評価:
+（応募者の記述に基づく思考傾向や強みの分析を日本語で記述）
+
+■ 明日の面接での着眼点・観察ポイント:
+（面接で確認すべきポイントを日本語で記述）
+
+■ 明日使える深掘り質問例:
+1. （具体的な深掘り質問1）
+2. （具体的な深掘り質問2）
+
+■ 面接事前準備メモ（面接官の事前メモ欄）:
+（面接官への事前アドバイス）
 """
 
     try:
@@ -156,9 +174,14 @@ def generate_gemini_report(name, text):
             if 'generateContent' in m.supported_generation_methods:
                 try:
                     model = genai.GenerativeModel(m.name)
-                    response = model.generate_content(prompt)
+                    response = model.generate_content(
+                        prompt,
+                        generation_config={"temperature": 0.3}
+                    )
                     if response and hasattr(response, 'text') and response.text:
-                        return response.text
+                        # 指示文が返ってきた場合のガード処理
+                        if "Recruitment interview expert" not in response.text:
+                            return response.text
                 except Exception:
                     continue
     except Exception:
