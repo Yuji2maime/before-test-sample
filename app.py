@@ -129,7 +129,7 @@ def generate_gemini_report(name, text):
 【記述内容】：
 "{text}"
 """
-    model = genai.GenerativeModel("gemini-1.5-pro")
+    model = genai.GenerativeModel("gemini-pro")
     response = model.generate_content(prompt)
     return response.text
     
