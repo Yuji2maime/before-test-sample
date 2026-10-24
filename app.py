@@ -98,40 +98,43 @@ def generate_gemini_report(name, text):
         return f"エラーが発生しました: {str(e)}"
     return "APIからの応答を取得できませんでした。"
 
-# メイン画面のフォーム構成
-st.markdown("## 事前アンケート入力フォーム")
+# 🔓 管理者ログイン中の場合：専用の管理者ダッシュボード（スコア・コメント確認画面）を表示
+if st.session_state.is_admin:
+    st.markdown("## 📊 管理者用レポート生成・確認ダッシュボード")
+    st.success("管理者権限でアクセスしています。応募者の情報を入力してAI評価レポート（スコア・コメント）を確認できます。")
 
-st.markdown(
-    """
-    <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-        <h4 style="margin-top: 0; color: #1E3A8A;">【事前提出のご案内】</h4>
-        <p style="margin-bottom: 0;">本アンケートは、明日のセッション・面接をより実りあるものにするため、事前に皆様の日常的なお考えや仕事観をお伺いするものです。正解・不正解はございませんので、リラックスしてご自身の率直なお考えをご回答ください。</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    admin_name = st.text_input("応募者氏名（管理者用）", placeholder="例：山田 太郎", key="admin_name")
+    admin_text = st.text_area("応募者の事前アンケート記述内容（管理者用）", placeholder="ご自身の考えや価値観等をご記入ください。", key="admin_text")
 
-name = st.text_input("お名前（氏名）", placeholder="例：山田 太郎")
-text = st.text_area("思考・表現力に関する記述", placeholder="ご自身の考えや価値観、これまでの経験で大切にしてきたこと等を自由にご記入ください。")
-
-# 提出・レポート生成ボタン
-if st.button("事前回答を提出する"):
-    if name and text:
-        # 管理者としてログインしている場合は、シビアな評価レポート（スコア・コメント）を即座に表示
-        if st.session_state.is_admin:
-            with st.spinner("AIがレポートを生成中（管理者モード）..."):
-                result = generate_gemini_report(name, text)
+    if st.button("AIレポートを生成する", key="admin_generate_btn"):
+        if admin_name and admin_text:
+            with st.spinner("AIがシビアな評価レポートを生成中..."):
+                result = generate_gemini_report(admin_name, admin_text)
                 st.markdown("---")
-                st.markdown("### 📊 【管理者用】AI評価レポート・スコア結果")
                 st.markdown(result)
         else:
+            st.warning("応募者氏名と記述内容を入力してください。")
+
+# 📝 通常画面（未ログイン時）：応募者向けの事前アンケート入力フォームを表示
+else:
+    st.markdown("## 事前アンケート入力フォーム")
+
+    st.markdown(
+        """
+        <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #1E3A8A;">【事前提出のご案内】</h4>
+            <p style="margin-bottom: 0;">本アンケートは、明日のセッション・面接をより実りあるものにするため、事前に皆様の日常的なお考えや仕事観をお伺いするものです。正解・不正解はございませんので、リラックスしてご自身の率直なお考えをご回答ください。</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    user_name = st.text_input("お名前（氏名）", placeholder="例：山田 太郎", key="user_name")
+    user_text = st.text_area("思考・表現力に関する記述", placeholder="ご自身の考えや価値観、これまでの経験で大切にしてきたこと等を自由にご記入ください。", key="user_text")
+
+    if st.button("事前回答を提出する", key="user_submit_btn"):
+        if user_name and user_text:
             with st.spinner("送信中..."):
                 st.success("事前回答を受け付けました。ご協力ありがとうございました。")
-                st.info("※サイドバーから管理者としてログインすると、AIによるシビアな評価レポート（スコア・コメント・深掘り質問）を確認できます。")
-    else:
-        st.warning("お名前と記述内容を入力してください。")
-
-# 管理者ログイン中の追加案内
-if st.session_state.is_admin:
-    st.markdown("---")
-    st.info("🔓 現在、**管理者としてログイン中**です。上記のフォームに氏名と記述を入力して「事前回答を提出する」を押すと、シビアな評価レポートやコメントが即座に画面下に表示されます。")
+        else:
+            st.warning("お名前と記述内容を入力してください。")
