@@ -2,46 +2,8 @@ import streamlit as st
 import google.generativeai as genai
 
 # Streamlitのページ設定
-st.set_page_config(page_title="Streamlit - 思考・表現力セッション（事前準備）", layout="wide")
+st.set_page_config(page_title="思考・表現力セッション（事前準備用）", layout="wide")
 
-# セッション状態（ログイン状態）の初期化
-if "is_admin" not in st.session_state:
-    st.session_state.is_admin = False
-
-# サイドバーの構成（メニュー・設定、管理者ログイン）
-with st.sidebar:
-    st.markdown("### 📌 メニュー・設定")
-    st.markdown("#### 🔒 管理者ログイン")
-    
-    # まだログインしていない場合
-    if not st.session_state.is_admin:
-        admin_password = st.text_input("パスワードを入力", type="password", key="admin_pass")
-        login_btn = st.button("ログイン")
-        
-        if login_btn:
-            # パスワードの判定（必要に応じて特定のパスワードを設定できます。現在は何か入力されていればログインします）
-            if admin_password:
-                st.session_state.is_admin = True
-                st.rerun()
-            else:
-                st.warning("パスワードを入力してください。")
-    else:
-        # ログイン中の場合
-        st.success("管理者としてログイン中 です")
-        if st.button("ログアウト"):
-            st.session_state.is_admin = False
-            st.rerun()
-
-    st.markdown("---")
-    st.markdown("#### ⚠️ 注意事項・禁止事項・免責事項")
-    st.markdown(
-        """
-        - **判定結果の位置付け** 本システムの思考性・認知特性分析は、応募者の自己申告テキストに基づく事前傾向分析であり、人物像や能力を確定するものではありません。
-        - **面接準備の補助ツール** 本レポートは明日の面接に向けた事前読み込み・質問設計の参考材料です。最終的な選考判定および合否決定、不確定要素の責任は...
-        """
-    )
-
-# メイン画面のタイトル
 st.markdown(
     """
     <div style="background-color: #1E3A8A; padding: 15px; border-radius: 5px; color: white; margin-bottom: 20px;">
@@ -51,33 +13,12 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 🔒 管理者ログイン中の場合の画面表示
-if st.session_state.is_admin:
-    st.markdown("## 🛠 管理者ダッシュボード")
-    st.info("管理者権限でログインしています。ここに管理用の機能や設定等を表示できます。")
-    # 管理者画面で表示したい機能があればここに追記できます
+# 入力フォームの作成
+name = st.text_input("応募者氏名")
+text = st.text_area("応募者の事前アンケート記述内容")
 
-# 📝 通常の応募者向け入力フォーム画面
-else:
-    st.markdown("## 事前アンケート入力フォーム")
-
-    # 事前提出のご案内ボックス
-    st.markdown(
-        """
-        <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-            <h4 style="margin-top: 0; color: #1E3A8A;">【事前提出のご案内】</h4>
-            <p style="margin-bottom: 0;">本アンケートは、明日のセッション・面接をより実りあるものにするため、事前に皆様の日常的なお考えや仕事観をお伺いするものです。正解・不正解はございませんので、リラックスしてご自身の率直なお考えをご回答ください。</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # 入力フォームの作成
-    name = st.text_input("お名前（氏名）", placeholder="例：山田 太郎")
-    text = st.text_area("思考・表現力に関する記述", placeholder="ご自身の考えや価値観、これまでの経験で大切にしてきたこと等を自由にご記入ください。")
-
-    def generate_gemini_report(name, text):
-        prompt = f"""
+def generate_gemini_report(name, text):
+    prompt = f"""
 あなたは採用面接の専門家です。
 ※出力は、コード内の見出し等を除き、解説や分析コメントなどは必ずすべて「日本語」で行ってください（英語の使用は厳禁です）。
 以下の応募者の事前アンケート記述内容を評価・分析し、面接官が前日に確認するための「事前準備レポート」を作成してください。
@@ -107,29 +48,29 @@ else:
 ■ 面接事前準備メモ（面接官の事前メモ欄）:
 """
 
-        try:
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    try:
-                        model = genai.GenerativeModel(m.name)
-                        response = model.generate_content(
-                            prompt,
-                            generation_config={"temperature": 0.1}
-                        )
-                        if response and hasattr(response, 'text') and response.text:
-                            res_text = response.text
-                            return res_text
-                    except Exception:
-                        continue
-        except Exception as e:
-            return f"エラーが発生しました: {str(e)}"
-        return "APIからの応答を取得できませんでした。"
+    try:
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                try:
+                    model = genai.GenerativeModel(m.name)
+                    response = model.generate_content(
+                        prompt,
+                        generation_config={"temperature": 0.1}
+                    )
+                    if response and hasattr(response, 'text') and response.text:
+                        res_text = response.text
+                        return res_text
+                except Exception:
+                    continue
+    except Exception as e:
+        return f"エラーが発生しました: {str(e)}"
+    return "APIからの応答を取得できませんでした。"
 
-    # 実行ボタン（「事前回答を提出する」）
-    if st.button("事前回答を提出する"):
-        if name and text:
-            with st.spinner("AIがレポートを生成中..."):
-                result = generate_gemini_report(name, text)
-                st.markdown(result)
-        else:
-            st.warning("お名前と記述内容を入力してください。")
+# 実行ボタン
+if st.button("レポート生成"):
+    if name and text:
+        with st.spinner("AIがレポートを生成中..."):
+            result = generate_gemini_report(name, text)
+            st.markdown(result)
+    else:
+        st.warning("応募者氏名と記述内容を入力してください。")
