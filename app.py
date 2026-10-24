@@ -176,7 +176,7 @@ def generate_gemini_report(name, text):
 ■ 面接事前準備メモ (面接官の事前メモ欄) :
 """
 
-        　　　try:
+try:
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 try:
