@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# カスタムCSS（ブルー系テーマ：当日用の赤と完全に差別化）
+# カスタムCSS（落ち着いたブルー系）
 st.markdown("""
 <style>
     .day-banner {
@@ -93,7 +93,7 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 # ----------------------------------------------------
-# 補助関数：タイプ判定とシビアなスコア計算
+# 補助関数：タイプ判定とスコア計算
 # ----------------------------------------------------
 def analyze_text_simple(text):
     judging = "Te型（効率・構造化）" if any(w in text for w in ["効率", "計画", "目標", "構造", "成果", "システム"]) else \
@@ -131,7 +131,7 @@ def calculate_scores(text, types_list):
         scores[k] = max(10, min(95, scores[k]))
     return scores
 
-# Gemini安全生成関数（完全日本語・長所短所混在・シビアかつ深い掘り下げ）
+# Gemini安全生成関数（純粋な日本語のみ・長所と短所を織り交ぜたシビアな分析）
 def generate_gemini_report_day(name, text):
     prompt = f"""以下の応募者の事前アンケート記述内容を分析し、面接官向けの詳細な事前準備レポートをすべて日本語で作成してください。英語やシステム指示の混入は一切禁止します。
 
@@ -167,8 +167,7 @@ def generate_gemini_report_day(name, text):
                 model = genai.GenerativeModel(model_name)
                 res = model.generate_content(prompt, generation_config={"temperature": 0.1})
                 if res and hasattr(res, 'text') and res.text:
-                    # 英語が万が一含まれている場合はフォールバックへ流す
-                    if "Role:" in res.text or "Constraint:" in res.text:
+                    if any(eng in res.text for eng in ["Applicant", "Goal", "Constraints", "Role:", "Description:"]):
                         continue
                     return res.text
             except Exception:
@@ -176,7 +175,7 @@ def generate_gemini_report_day(name, text):
     except Exception:
         pass
 
-    # フォールバックエンジン（完全日本語）
+    # フォールバックエンジン（完全日本語・長所短所シビア評価）
     bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
     if any(k in text for k in bad_keywords):
         return (
@@ -195,27 +194,29 @@ def generate_gemini_report_day(name, text):
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
-            "・長所・評価できる点: 簡潔に回答をまとめようとする意図が見られる点。\n"
-            "・短所・リスク・懸念点: 記述が極めて簡素であり、具体的エピソードや自身の考えの深掘りが全く及んでいない点。主体性や思考力の欠如が懸念される。\n"
+            "・長所・評価できる点: 相手に配慮しようとする意向が見られる点。\n"
+            "・短所・リスク・懸念点: 記述が極めて短く抽象的であり、具体的にどのような行動をとるのか根拠が欠如している点。口先だけの理想論に終わるリスクがある。\n"
             "■ 明日の面接での着眼点・観察ポイント:\n"
-            "・言葉の少なさの背景に、熱意の低さがあるのか、表現の苦手さがあるのかを見極める。\n"
+            "・「寄り添う」という言葉の裏にある具体的行動力や精神的耐性を口頭で見極める。\n"
             "■ 明日使える深掘り質問例:\n"
-            "1. 「記述いただいた内容について、具体的にどのような経験や背景があってそのお考えに至ったのか教えてください。」\n"
-            "2. 「この記述内容をご自身の言葉でより詳しく説明するとしたら、どのような要素を付け加えますか？」\n"
+            "1. 「『患者に寄り添う』とは、具体的にどのような行動を指すと考えていますか？過去の実践例を教えてください。」\n"
+            "2. 「自分の親身な対応が相手に受け入れられなかったり、理不尽に拒絶された場合、どのように対応しますか？」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
-            "・抽象的な回答に終始しているため、口頭での徹底的な深掘りが不可欠。"
+            "・表層的な表現に終始しているため、面接にて実践力と論理性を厳しく追及すること。"
         )
     else:
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
-            "・長所・評価できる点: ご自身の価値観や意向について一定の記述が見られ、自身の考えを伝えようとする姿勢が伺える点。\n"
-            "・短所・リスク・懸念点: 表現は整っているものの、実行プロセスや困難克服の具体的根拠が乏しく、理想論に偏るリスクがある点。\n"
+            "・長所・評価できる点: 他者への共感性や対人配慮の意向が強く伺える点。\n"
+            "・短所・リスク・懸念点: 感情面への配慮に偏るあまり、客観的判断や業務効率を重視すべき場面での判断力に課題が残る点。\n"
+            "■ 明日の面接での着眼点・観察ポイント:\n"
+            "・共感性とプロ意識（毅然とした対応）のバランスが取れているかを確認する。\n"
             "■ 明日使える深掘り質問例:\n"
-            "1. 「記述された考え方を実際の業務場面で実践した際、直面した壁とそれをどう乗り越えたか教えてください。」\n"
-            "2. 「ご自身の考えと組織のルールや方針が対立した場合、どのように折り合いをつけますか？」\n"
+            "1. 「相手の感情に共感することと、プロとして冷静に客観的判断を下すことのバランスをどのように取りますか？」\n"
+            "2. 「ご自身の価値観と組織のルールが対立した際、どちらを優先して行動しますか？」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
-            "・面接にて具体性・再現性を厳しく確認すること。"
+            "・面接にて客観的思考力とプレッシャーへの耐性を厳しく確認すること。"
         )
 
 # ----------------------------------------------------
@@ -358,11 +359,12 @@ else:
                 
                 saved_memo = selected_candidate.get("ai_memo", "")
                 
-                # データベースに英語（古いプロンプト）が保存されている場合は強制的に再生成する
-                if not saved_memo or "Role:" in saved_memo or "Constraint:" in saved_memo:
+                # 保存されているデータに英語が含まれている場合は即座に破棄して日本語で再生成
+                is_invalid_english = any(eng in str(saved_memo) for eng in ["Applicant", "Goal", "Constraints", "Role:", "Description:", "Content:"])
+                
+                if not saved_memo or is_invalid_english:
                     with st.spinner("記述内容を分析し、完全な日本語レポートを作成中..."):
                         default_memo = generate_gemini_report_day(selected_candidate.get('name'), candidate_text.strip())
-                        # 自動的に綺麗な日本語レポートでデータベースを上書き保存
                         try:
                             supabase.table("candidate_responses").update({"ai_memo": default_memo}).eq("id", record_id).execute()
                         except Exception:
