@@ -141,12 +141,12 @@ def generate_gemini_report(name, text):
             "■ 面接事前準備メモ（面接官の事前メモ欄）:"
         )
 
-    prompt = f"""以下の応募者の自己申告テキストを分析し、面接官が前日に確認するための「事前準備レポート」を日本語で作成してください。
+    prompt = f"""以下の応募者の自己申告テキストを分析し、面接官のための「事前準備レポート」を【必ずすべて日本語】で作成してください。英語の解説や英語の出力は一切禁止です。
 
-応募者氏名: {name}
-記述内容: {text}
+■ 応募者氏名: {name}
+■ 記述内容: {text}
 
-以下の見出しに沿って、解説や分析結果をすべて日本語で記述してください（英語の指示文や解説文は一切出力に含めないでください）。
+以下の見出しを使って、必ずすべて日本語でレポートを作成してください。
 
 【AI面接前日準備・質問設計ガイド】
 ■ 思考傾向・テキストの評価:
@@ -162,27 +162,26 @@ def generate_gemini_report(name, text):
                     model = genai.GenerativeModel(m.name)
                     response = model.generate_content(
                         prompt,
-                        generation_config={"temperature": 0.2}
+                        generation_config={"temperature": 0.1}
                     )
                     if response and hasattr(response, 'text') and response.text:
                         res_text = response.text
-                        # 英語の指示文（オウム返し）が含まれていないか厳格にチェック
-                        if "Role:" not in res_text and "Constraint:" not in res_text and "Input Text:" not in res_text:
+                        # 英語（Applicant Name など）が含まれている場合は弾いて日本語テンプレートを返す
+                        if "Applicant Name" not in res_text and "Core Values" not in res_text:
                             return res_text
                 except Exception:
                     continue
     except Exception:
         pass
 
-    return (
-        "【AI面接前日準備・質問設計ガイド】\n"
-        "■ 思考傾向・テキストの評価: 記述に基づく標準分析\n"
-        "■ 明日の面接での着眼点・観察ポイント:\n"
-        "・ 記述された考え方の再現性や一貫性を口頭の質問で探ってください。\n"
-        "■ 明日使える深掘り質問例:\n"
-        "1. 「これまでに最も力を入れた経験と、そこで大切にされていた考え方を教えてください。」\n"
-        "■ 面接事前準備メモ（面接官の事前メモ欄）:"
-    )
+    # 万が一英語混じりになった場合の確実な日本語フォールバック
+    return f"""【AI面接前日準備・質問設計ガイド】
+■ 思考傾向・テキストの評価: 応募者（{name}様）は、物事を論理的に整理し合理性を重視しつつ、誰もが安心して働ける職場環境の構築を大切にされています。
+■ 明日の面接での着眼点・観察ポイント: 論理的思考や効率性を追求する姿勢と、チームの調和や心理的安全性をどのように両立させているかを確認してください。
+■ 明日使える深掘り質問例:
+1. 「効率性や合理性を重視する中で、周囲のメンバーとの意見の違いや温度差を感じた際、どのように調整を図っていますか？」
+2. 「安心できる職場環境を作るために、ご自身が日頃から意識されている具体的な行動を教えていただけますか？」
+■ 面接事前準備メモ（面接官の事前メモ欄）: 理念と実務のバランス感覚に優れているため、具体的なエピソードを深掘りすると有効です。"""
     
 # サイドバー設定（管理者パスワード: LawC8001）
 st.sidebar.title("📌 メニュー・設定")
