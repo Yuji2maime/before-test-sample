@@ -142,7 +142,7 @@ def generate_gemini_report(name, text):
         )
 
     def generate_gemini_report(name, text):
-    bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
+        bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
     if any(k in text for k in bad_keywords):
         return (
             "【AI面接前日準備・質問設計ガイド】\n"
