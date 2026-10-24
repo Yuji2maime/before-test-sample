@@ -7,11 +7,11 @@ import plotly.graph_objects as go
 # 1. ページ基本設定
 st.set_page_config(
     page_title="Streamlit - 思考・表現力セッション（事前準備）",
-    page_icon="🔴",
+    page_icon="🔵",
     layout="wide"
 )
 
-# カスタムCSS
+# カスタムCSS（ブルー系テーマ：当日用の赤と完全に差別化）
 st.markdown("""
 <style>
     .day-banner {
@@ -131,7 +131,7 @@ def calculate_scores(text, types_list):
         scores[k] = max(10, min(95, scores[k]))
     return scores
 
-# Gemini安全生成関数（純粋な日本語のみのプロンプト構成）
+# Gemini安全生成関数（完全日本語・長所短所混在・シビアかつ深い掘り下げ）
 def generate_gemini_report_day(name, text):
     prompt = f"""以下の応募者の事前アンケート記述内容を分析し、面接官向けの詳細な事前準備レポートをすべて日本語で作成してください。英語やシステム指示の混入は一切禁止します。
 
@@ -167,6 +167,9 @@ def generate_gemini_report_day(name, text):
                 model = genai.GenerativeModel(model_name)
                 res = model.generate_content(prompt, generation_config={"temperature": 0.1})
                 if res and hasattr(res, 'text') and res.text:
+                    # 英語が万が一含まれている場合はフォールバックへ流す
+                    if "Role:" in res.text or "Constraint:" in res.text:
+                        continue
                     return res.text
             except Exception:
                 continue
@@ -207,9 +210,7 @@ def generate_gemini_report_day(name, text):
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
             "・長所・評価できる点: ご自身の価値観や意向について一定の記述が見られ、自身の考えを伝えようとする姿勢が伺える点。\n"
-            "・短所・リスク・懸念点: 表情や言葉遣いは綺麗であるものの、実行プロセスや困難克服の具体的根拠が乏しく、理想論に偏るリスクがある点。\n"
-            "■ 明日の面接での着眼点・観察ポイント:\n"
-            "・記述された理念や想いが、実際の行動や成果として伴っているかの整合性を確認する。\n"
+            "・短所・リスク・懸念点: 表現は整っているものの、実行プロセスや困難克服の具体的根拠が乏しく、理想論に偏るリスクがある点。\n"
             "■ 明日使える深掘り質問例:\n"
             "1. 「記述された考え方を実際の業務場面で実践した際、直面した壁とそれをどう乗り越えたか教えてください。」\n"
             "2. 「ご自身の考えと組織のルールや方針が対立した場合、どのように折り合いをつけますか？」\n"
@@ -357,9 +358,15 @@ else:
                 
                 saved_memo = selected_candidate.get("ai_memo", "")
                 
-                if not saved_memo:
-                    with st.spinner("記述内容を分析し、レポートを作成中..."):
+                # データベースに英語（古いプロンプト）が保存されている場合は強制的に再生成する
+                if not saved_memo or "Role:" in saved_memo or "Constraint:" in saved_memo:
+                    with st.spinner("記述内容を分析し、完全な日本語レポートを作成中..."):
                         default_memo = generate_gemini_report_day(selected_candidate.get('name'), candidate_text.strip())
+                        # 自動的に綺麗な日本語レポートでデータベースを上書き保存
+                        try:
+                            supabase.table("candidate_responses").update({"ai_memo": default_memo}).eq("id", record_id).execute()
+                        except Exception:
+                            pass
                 else:
                     default_memo = saved_memo
 
