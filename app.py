@@ -4,14 +4,14 @@ import google.generativeai as genai
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. ページ基本設定（事前準備）
+# 1. ページ基本設定（労働調査会用・事前準備）
 st.set_page_config(
-    page_title="思考・表現力セッション",
+    page_title="思考・表現力セッション（労働調査会用・事前準備）",
     page_icon="🟢",
     layout="wide"
 )
 
-# カスタムCSS（統一されたクリーンなデザイン）
+# カスタムCSS
 st.markdown("""
 <style>
     .day-banner {
@@ -65,8 +65,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="day-banner">🟢 思考・表現力セッション（労働調査会用・事前準備）</div>', unsafe_allow_html=True)
-
 # Supabase初期化
 @st.cache_resource
 def init_supabase():
@@ -90,6 +88,12 @@ if "GEMINI_API_KEY" in st.secrets:
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
+# ログイン状態に応じたバナータイトルの切り替え
+if st.session_state.is_admin:
+    st.markdown('<div class="day-banner">🟢 思考・表現力セッション（事前準備）</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="day-banner">🟢 思考・表現力セッション</div>', unsafe_allow_html=True)
+
 # ----------------------------------------------------
 # 補助関数（全4アプリ共通のシンプル・頑健ロジック）
 # ----------------------------------------------------
@@ -108,7 +112,7 @@ def analyze_text_simple(text):
 
 def calculate_scores(text, types_list):
     types_str = " ".join(types_list)
-    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ"]
+    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ", "ナンパ"]
     has_risk = any(k in text for k in risk_keywords)
     
     if len(text) < 30 or has_risk:
@@ -136,7 +140,7 @@ def calculate_scores(text, types_list):
     return scores
 
 def get_default_before_law_report(text):
-    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ"]
+    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ", "ナンパ"]
     if any(k in text for k in risk_keywords):
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
