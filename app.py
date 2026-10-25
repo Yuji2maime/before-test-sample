@@ -4,18 +4,18 @@ import google.generativeai as genai
 import pandas as pd
 import plotly.graph_objects as go
 
-# 1. ページ基本設定
+# 1. ページ基本設定（事前準備）
 st.set_page_config(
-    page_title="思考・表現力セッション（労働調査会用・事前準備）",
-    page_icon="🔵",
+    page_title="思考・表現力セッション",
+    page_icon="🟢",
     layout="wide"
 )
 
-# カスタムCSS
+# カスタムCSS（統一されたクリーンなデザイン）
 st.markdown("""
 <style>
     .day-banner {
-        background-color: #1E3A8A;
+        background-color: #0F766E;
         color: #FFFFFF !important;
         padding: 10px 18px;
         border-radius: 6px;
@@ -24,24 +24,24 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .day-title {
-        color: #1E3A8A;
-        border-bottom: 3px solid #1E3A8A;
+        color: #0F766E;
+        border-bottom: 3px solid #0F766E;
         padding-bottom: 6px;
         margin-bottom: 15px;
         font-size: 1.6rem;
         font-weight: bold;
     }
     .instruction-box {
-        background-color: #F8FAFC;
+        background-color: #f8f9fa;
         color: #212529 !important;
-        border: 1px solid #E2E8F0;
+        border-left: 5px solid #0F766E;
         padding: 15px;
-        border-radius: 5px;
+        border-radius: 4px;
         margin-bottom: 20px;
         line-height: 1.6;
     }
     .instruction-box h4 {
-        color: #1E3A8A !important;
+        color: #0F766E !important;
         margin-top: 0;
         margin-bottom: 10px;
         font-weight: bold;
@@ -51,7 +51,7 @@ st.markdown("""
         margin-bottom: 0;
     }
     div.stButton > button:first-child {
-        background-color: #1E3A8A;
+        background-color: #0F766E;
         color: white !important;
         border-radius: 6px;
         border: none;
@@ -59,13 +59,13 @@ st.markdown("""
         padding: 8px 16px;
     }
     div.stButton > button:first-child:hover {
-        background-color: #1d4ed8;
+        background-color: #115e59;
         color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="day-banner">◆ 思考・表現力セッション（労働調査会用・事前準備）</div>', unsafe_allow_html=True)
+st.markdown('<div class="day-banner">🟢 思考・表現力セッション（労働調査会用・事前準備）</div>', unsafe_allow_html=True)
 
 # Supabase初期化
 @st.cache_resource
@@ -91,7 +91,7 @@ if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
 # ----------------------------------------------------
-# 補助関数
+# 補助関数（全4アプリ共通のシンプル・頑健ロジック）
 # ----------------------------------------------------
 def analyze_text_simple(text):
     judging = "Te型（効率・構造化）" if any(w in text for w in ["効率", "計画", "目標", "構造", "成果", "システム"]) else \
@@ -108,9 +108,11 @@ def analyze_text_simple(text):
 
 def calculate_scores(text, types_list):
     types_str = " ".join(types_list)
-    bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
-    if any(k in text for k in bad_keywords) or len(text) < 15:
-        base = 25
+    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ"]
+    has_risk = any(k in text for k in risk_keywords)
+    
+    if len(text) < 30 or has_risk:
+        base = 20
     else:
         base = 45 + (len(text) % 25)
     
@@ -125,73 +127,52 @@ def calculate_scores(text, types_list):
         "Ni": base + 10 if "Ni" in types_str or any(w in text for w in ["洞察", "未来", "ビジョン"]) else base - 10,
     }
     
+    if len(text) < 30 or has_risk:
+        for k in scores:
+            scores[k] = min(scores[k], 25)
+            
     for k in scores:
         scores[k] = max(10, min(95, scores[k]))
     return scores
 
-# 【全職種対応・汎用厳格版】レポート生成テンプレート
-def get_default_before_report(text):
-    # 1. 公序良俗違反・極端な不適切表現の検知
-    bad_keywords = ["セックス", "オナニー", "ブルマー", "スケベ", "暴れ", "死ね", "殺す", "風俗"]
-    if any(k in text for k in bad_keywords):
-        return (
-            "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
-            "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
-            "・長所・評価できる点: なし\n"
-            "・短所・リスク・懸念点: 【重大な不採用推奨】公序良俗に反する表現および就労目的から著しく逸脱した記述が含まれています。\n"
-            "■ 明日の面接での着眼点・観察ポイント:\n"
-            "・組織のコンプライアンス維持の観点から面接での厳格な確認を推奨します。\n"
-            "■ 明日使える深掘り質問例:\n"
-            "1. 「ご自身の記述された内容について、社会的マナーや倫理観の観点から面接官にどのように説明されますか？」\n"
-            "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
-            "・コンプライアンス上の重大なリスクがあるため面接にて厳しく追及すること。"
-        )
-    
-    # 2. 規律違反容認・反社会的価値観（森田カラス氏のようなケース）の普遍的検知
-    compliance_risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "規則を破る", "見つからなければ", "法律", "隠れて"]
-    if any(k in text for k in compliance_risk_keywords):
+def get_default_before_law_report(text):
+    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ"]
+    if any(k in text for k in risk_keywords):
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
             "・長所・評価できる点: 特になし\n"
-            "・短所・リスク・懸念点: 【🚨 重大コンプライアンスリスク】組織の規範遵守を軽視し、隠れての規律違反や力による支配を肯定する極めて危険な価値観が示されています。採用した場合、組織秩序の崩壊や重大なトラブルを引き起こすリスクが極めて高い状態です。\n"
+            "・短所・リスク・懸念点: 【🚨 重大コンプライアンスリスク】組織の規範遵守を軽視する傾向が示されており、面接において厳格な確認が必要です。\n"
             "■ 明日の面接での着眼点・観察ポイント:\n"
             "・社会的規範意識、倫理観、および組織のルールに対する基本的態度を厳格に見極める。\n"
             "■ 明日使える深掘り質問例:\n"
-            "1. 「『上に見つからなければ違反をしても構わない』というお考えについて、組織で働く社会人としてどのように正当化されるか説明してください。」\n"
-            "2. 「ご自身の価値観と企業のコンプライアンス（法令・社内規程）が衝突した際、どちらを優先して行動しますか？」\n"
+            "1. 「組織のルールやコンプライアンスに関するお考えについて具体的にご説明いただけますか？」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
-            "・コンプライアンスおよびガバナンス上の致命的リスクあり。面接にて厳しく事実確認と適性を追及すること。"
+            "・コンプライアンス上の重大なリスクがあるため面接にて厳しく追及すること。"
         )
-    
-    # 3. 記述が極めて短い・抽象的な場合
     elif len(text) < 30:
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
             "・長所・評価できる点: 簡潔に意向を示そうとする姿勢。\n"
-            "・短所・リスク・懸念点: 記述が極めて抽象的であり、具体的な行動根拠や論理性が欠如している点。表面的な言葉にとどまり実行力に疑問が残るリスク。\n"
+            "・短所・リスク・懸念点: 【🚨 記述量・論理的説明の不足（慎重評価）】記述量が極めて少なく、具体的な行動根拠や論理性が欠如している点。表面的な言葉にとどまるリスク。\n"
             "■ 明日の面接での着眼点・観察ポイント:\n"
             "・抽象的な表現の裏にある具体的な行動実績と論理的思考力を面接口頭で見極める。\n"
             "■ 明日使える深掘り質問例:\n"
-            "1. 「ご自身の主張を裏付ける具体的なエピソードや、過去の直面した課題とその解決策を教えてください。」\n"
-            "2. 「目標達成に向けて、どのようなプロセスを構築して実行してきたか具体的に説明してください。」\n"
+            "1. 「ご自身の主張を裏付ける具体的なエピソードや、過去に直面した課題とその解決策を教えてください。」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
             "・表層的な表現に終始しているため、面接にて実践力と論理性を厳しく追及すること。"
         )
-    
-    # 4. 一般的な記述（全職種共通の普遍的評価軸）
     else:
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
             "・長所・評価できる点: 自身の考えや価値観を一定の言葉で表現できている点。\n"
-            "・短所・リスク・懸念点: 理想論や主観に偏る傾向が見られる場合があり、実際の業務における客観的判断力やプレッシャー耐性の検証が必要な点。\n"
+            "・短所・リスク・懸念点: 理想論や主観に偏る傾向が見られる場合があり、実際の業務における客観的判断力の検証が必要な点。\n"
             "■ 明日の面接での着眼点・観察ポイント:\n"
             "・主観的な意欲だけでなく、客観的な状況判断力と組織への適応バランスが取れているかを確認する。\n"
             "■ 明日使える深掘り質問例:\n"
             "1. 「ご自身の意見や価値観と、組織の方針やチームのルールが異なる場合、どのように折り合いをつけて行動しますか？」\n"
-            "2. 「業務上の予期せぬトラブルやプレッシャーに直面した際、どのような手順で冷静さを保ち解決を図りますか？」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
             "・面接にて客観的思考力とプレッシャーへの耐性、ガバナンス意識を重点的に確認すること。"
         )
@@ -205,7 +186,7 @@ if not st.session_state.is_admin:
     st.sidebar.subheader("🔒 管理者ログイン")
     password_input = st.sidebar.text_input("パスワードを入力", type="password")
     if st.sidebar.button("ログイン"):
-        if password_input == "LawC8001":
+        if password_input == "8888":  # 労働調査会用パスワード
             st.session_state.is_admin = True
             st.rerun()
         else:
@@ -220,11 +201,9 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("⚠️ 注意事項・禁止事項・免責事項")
 st.sidebar.info("""
 - **判定結果の位置付け**
-  本システムの思考性・認知特性分析は、応募者の自己申告テキストに基づく事前傾向分析であり、人物像や能力を確定するものではありません。
+  本システムの分析は事前傾向分析であり、人物像を確定するものではありません。
 - **面接準備の補助ツール**
-  本レポートは明日の面接に向けた事前読み込み・質問設計の参考材料です。**最終的な選考判定および合否決定、不確定要素の責任は当組織および面接官に帰属します。**
-- **個人情報の管理・禁止事項**
-  採用選考以外の目的での使用、および第三者への無断漏洩・共有は厳禁です。
+  最終的な選考判定および合否決定の責任は選考責任者に帰属します。
 """)
 
 # ----------------------------------------------------
@@ -235,15 +214,14 @@ if not st.session_state.is_admin:
     
     st.markdown("""
     <div class="instruction-box">
-        <h4 style="margin-top: 0; color: #1E3A8A;">【事前提出のご案内】</h4>
+        <h4 style="margin-top: 0; color: #0F766E;">【事前提出のご案内】</h4>
         <p style="margin-bottom: 0;">本アンケートは、明日のセッション・面接をより実りあるものにするため、事前に皆様の日常的なお考えや仕事観をお伺いするものです。正解・不正解はございませんので、リラックスしてご自身の率直なお考えをご回答ください。</p>
     </div>
     """, unsafe_allow_html=True)
 
-    with st.form(key="candidate_form_day"):
+    with st.form(key="candidate_form_before_law"):
         applicant_name = st.text_input("お名前（氏名）", placeholder="例：山田 太郎")
         applicant_text = st.text_area("思考・表現力に関する記述", height=150, placeholder="ご自身の考えや価値観、これまでの経験で大切にしてきたこと等を自由にご記入ください。")
-        
         submit_button = st.form_submit_button(label="事前回答を提出する")
 
     if submit_button:
@@ -264,7 +242,7 @@ if not st.session_state.is_admin:
                 st.error(f"送信時にエラーが発生しました: {e}")
 
 # ----------------------------------------------------
-# B. 管理者画面
+# B. 管理者画面（ai_memo_before_law カラムを使用）
 # ----------------------------------------------------
 else:
     st.markdown('<h1 class="day-title">【管理者用】事前準備・面接深掘りガイド</h1>', unsafe_allow_html=True)
@@ -314,8 +292,8 @@ else:
                         r=values + [values[0]],
                         theta=categories + [categories[0]],
                         fill='toself',
-                        fillcolor='rgba(30, 58, 138, 0.4)',
-                        line=dict(color='#1E3A8A', width=2)
+                        fillcolor='rgba(15, 118, 110, 0.4)',
+                        line=dict(color='#0F766E', width=2)
                     ))
                     fig.update_layout(
                         polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
@@ -325,17 +303,13 @@ else:
                     )
                     st.plotly_chart(fig, use_container_width=True)
 
-                # ----------------------------------------------------
-                # レポート表示（全職種共通の汎用厳格判定）
-                # ----------------------------------------------------
                 st.markdown("---")
                 st.markdown("### 📝 AI面接前日準備・質問設計ガイド")
                 
                 saved_memo = selected_candidate.get("ai_memo_before_law", "")
                 
-                # 既存データが古い汎用文面の場合やリスク判定に合致する場合に更新
-                if not saved_memo or "選考評価＆配属活用レポート" in str(saved_memo) or "患者に寄り添う" in str(saved_memo) and "軍人" in candidate_text:
-                    default_memo = get_default_before_report(candidate_text.strip())
+                if not saved_memo or "選考評価＆配属活用レポート" in str(saved_memo):
+                    default_memo = get_default_before_law_report(candidate_text.strip())
                     try:
                         supabase.table("candidate_responses").update({"ai_memo_before_law": default_memo}).eq("id", record_id).execute()
                     except Exception:
