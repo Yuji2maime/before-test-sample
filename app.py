@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
+import plotly.graph_objects as go
 from supabase import create_client, Client
 
 # ページ基本設定
@@ -33,12 +33,12 @@ def calculate_scores(data):
     scores = {k: np.random.randint(50, 95) for k in keys}
     return scores
 
-# --- サイドバーの設定（当日用と同一レイアウト） ---
+# --- サイドバーの設定 ---
 st.sidebar.markdown("## 📌 メニュー・設定")
 st.sidebar.success("管理者としてログイン中")
 
 if st.sidebar.button("応募者画面に戻る（ログアウト）"):
-    st.info("応募者画面へ切り替えます（シミュレーション）")
+    st.switch_page("app.py") # 元の画面遷移挙動
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### ⚠️ 注意事項・禁止事項・免責事項")
@@ -75,13 +75,16 @@ else:
                 st.subheader("📊 8項目適性・思考スタイル分析")
                 scores = calculate_scores(row)
                 
-                # レーダーチャート描画（安全なPlotly Express使用）
-                df_radar = pd.DataFrame(dict(
-                    r=list(scores.values()),
-                    theta=list(scores.keys())
-                ))
-                fig = px.line_polar(df_radar, r='r', theta='theta', line_close=True, range_r=[0, 100])
-                fig.update_traces(fill='toself')
+                # レーダーチャート描画
+                categories = list(scores.keys())
+                values = list(scores.values())
+                values += values[:1]
+                categories += categories[:1]
+                
+                fig = go.Figure(
+                    data=[go.Scatterpolar(r=values, theta=categories, fill='toself', name='特性スコア')],
+                    layout=go.Polar(radialaxis=dict(visible=True, range=[0, 100]))
+                )
                 fig.update_layout(
                     polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
                     showlegend=False,
@@ -93,7 +96,6 @@ else:
                 st.markdown("---")
                 st.markdown("### 📝 AI選考評価・採点＆適性配置・労務管理レポート")
                 
-                # ai_reportがリストや予期せぬ型であっても安全に文字列化する処理
                 raw_report = row.get('ai_report')
                 if isinstance(raw_report, list):
                     report_initial = "".join([str(item) for item in raw_report])
