@@ -111,8 +111,13 @@ def analyze_text_simple(text):
     return [judging, f"補助{perceiving}"]
 
 def calculate_scores(text, types_list):
-    types_str = " ".join(types_list)
-
+    # types_list がリストかどうかの安全チェックを追加
+    if isinstance(types_list, list):
+        types_str = "".join([str(item) for item in types_list])
+    elif types_list is not None:
+        types_str = str(types_list)
+    else:
+        types_str = ""
     # 【変更】リスク判定を行わないため、常にFalseに設定
     has_risk = False
 
