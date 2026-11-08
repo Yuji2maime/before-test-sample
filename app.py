@@ -318,7 +318,7 @@ else:
                 saved_memo = selected_candidate.get("ai_memo_before_law", "")
                 
                 if not saved_memo or "選考評価＆配属活用レポート" in str(saved_memo):
-                    default_memo = get_default_before_law_report(candidate_text.strip())
+                    default_memo = get_default_before_law_report((candidate_text or "").strip())
                     try:
                         supabase.table("candidate_responses").update({"ai_memo_before_law": default_memo}).eq("id", record_id).execute()
                     except Exception:
