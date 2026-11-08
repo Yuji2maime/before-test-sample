@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
+import plotly.express as px
 from supabase import create_client, Client
 
 # ページ基本設定
@@ -27,14 +27,32 @@ supabase = init_supabase()
 def get_default_law_day_report():
     return "（※ここにAIによる詳細な選考評価・採点コメントが記載されます。適宜編集してデータベースに保存可能です。）"
 
-# スコア計算関数（安全なリスト処理対応）
+# スコア計算関数
 def calculate_scores(data):
     keys = ["Te", "Ti", "Fe", "Fi", "Se", "Si", "Ne", "Ni"]
     scores = {k: np.random.randint(50, 95) for k in keys}
     return scores
 
+# --- サイドバーの設定（当日用と同一レイアウト） ---
+st.sidebar.markdown("## 📌 メニュー・設定")
+st.sidebar.success("管理者としてログイン中")
+
+if st.sidebar.button("応募者画面に戻る（ログアウト）"):
+    st.info("応募者画面へ切り替えます（シミュレーション）")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚠️ 注意事項・禁止事項・免責事項")
+st.sidebar.markdown(
+    """
+    * **判定結果の位置付け** 本システムの分析は事前傾向分析であり、人物像を確定するものではありません。
+    * **面接準備の補助ツール** 最終的な選考判定および合否決定の責任は選考責任者に帰属します。
+    """
+)
+
 # メイン画面処理
-st.title("【管理者用】事前準備・面接深掘りガイド")
+st.markdown("🟢 **思考・表現力セッション（事前準備）**")
+st.markdown("# 【管理者用】 事前準備・面接深掘りガイド")
+st.markdown("事前確認する応募者を選択してください")
 
 if supabase is None:
     st.warning("Supabaseへの接続が確立されていません。Secretsの設定を確認してください。")
@@ -46,7 +64,7 @@ else:
         if rows:
             # 応募者名のリスト作成
             candidate_names = [row.get("name", f"ID: {row.get('id')}") for row in rows]
-            selected_name = st.selectbox("事前確認する応募者を選択してください", candidate_names)
+            selected_name = st.selectbox("事前確認する応募者を選択してください", candidate_names, label_visibility="collapsed")
             
             # 選択された行のデータを取得
             row = next((r for r in rows if r.get("name") == selected_name or f"ID: {r.get('id')}" == selected_name), rows[0])
@@ -57,16 +75,13 @@ else:
                 st.subheader("📊 8項目適性・思考スタイル分析")
                 scores = calculate_scores(row)
                 
-                # レーダーチャート描画
-                categories = list(scores.keys())
-                values = list(scores.values())
-                values += values[:1]  # 閉じるため
-                categories += categories[:1]
-                
-                fig = go.Figure(
-                    data=[go.Scatterpolar(r=values, theta=categories, fill='toself', name='特性スコア')],
-                    layout=go.Polar(radialaxis=dict(visible=True, range=[0, 100]))
-                )
+                # レーダーチャート描画（安全なPlotly Express使用）
+                df_radar = pd.DataFrame(dict(
+                    r=list(scores.values()),
+                    theta=list(scores.keys())
+                ))
+                fig = px.line_polar(df_radar, r='r', theta='theta', line_close=True, range_r=[0, 100])
+                fig.update_traces(fill='toself')
                 fig.update_layout(
                     polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
                     showlegend=False,
