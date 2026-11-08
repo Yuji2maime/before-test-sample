@@ -255,16 +255,16 @@ if not st.session_state.is_admin:
 # ----------------------------------------------------
 else:
     st.markdown('<h1 class="day-title">【管理者用】事前準備・面接深掘りガイド</h1>', unsafe_allow_html=True)
-    
+
     try:
         response = supabase.table("candidate_responses").select("*").execute()
         data = response.data
-        
+
         if data:
             names = [item.get("name", "無名") for item in data]
             selected_name = st.selectbox("事前確認する応募者を選択してください", names)
             selected_candidate = next((item for item in data if item.get("name") == selected_name), None)
-            
+
             if selected_candidate:
                 record_id = selected_candidate.get("id")
                 candidate_text = (
@@ -277,6 +277,8 @@ else:
                     selected_candidate.get("types") or 
                     selected_candidate.get("cognitive_types") or []
                 )
+    except Exception as e:
+        st.error(f"データ取得時にエラーが発生しました: {e}")
                 
                 scores_dict = calculate_scores(candidate_text, candidate_types)
 
