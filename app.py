@@ -111,7 +111,11 @@ def analyze_text_simple(text):
     return [judging, f"補助{perceiving}"]
 
 def calculate_scores(text, types_list):
-    # types_list がリストかどうかの安全チェックを追加
+    # textがNoneの場合の安全対策（この1行を追加）
+    if text is None:
+        text = ""
+
+    # types_list がリストかどうかの安全チェック（追加済み）
     if isinstance(types_list, list):
         types_str = "".join([str(item) for item in types_list])
     elif types_list is not None:
