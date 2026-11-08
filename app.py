@@ -267,8 +267,16 @@ else:
             
             if selected_candidate:
                 record_id = selected_candidate.get("id")
-                candidate_text = selected_candidate.get("text", "")
-                candidate_types = selected_candidate.get("types", [])
+                candidate_text = (
+                    selected_candidate.get("text") or 
+                    selected_candidate.get("answer") or 
+                    selected_candidate.get("content") or 
+                    selected_candidate.get("body") or ""
+                )
+                candidate_types = (
+                    selected_candidate.get("types") or 
+                    selected_candidate.get("cognitive_types") or []
+                )
                 
                 scores_dict = calculate_scores(candidate_text, candidate_types)
 
