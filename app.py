@@ -6,8 +6,8 @@ from supabase import create_client, Client
 
 # ページ基本設定
 st.set_page_config(
-    page_title="思考・表現力セッション（事前準備・当日用）",
-    page_icon="🧠",
+    page_title="思考・表現力セッション（事前準備）",
+    page_icon="📘",
     layout="wide"
 )
 
@@ -29,7 +29,6 @@ def get_default_law_day_report():
 
 # スコア計算関数（安全なリスト処理対応）
 def calculate_scores(data):
-    # 仮のスコア算出ロジック（8項目）
     keys = ["Te", "Ti", "Fe", "Fi", "Se", "Si", "Ne", "Ni"]
     scores = {k: np.random.randint(50, 95) for k in keys}
     return scores
