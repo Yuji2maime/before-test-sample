@@ -112,14 +112,15 @@ def analyze_text_simple(text):
 
 def calculate_scores(text, types_list):
     types_str = " ".join(types_list)
-    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ", "ナンパ"]
-    has_risk = any(k in text for k in risk_keywords)
-    
+
+    # 【変更】リスク判定を行わないため、常にFalseに設定
+    has_risk = False
+
     if len(text) < 30 or has_risk:
         base = 20
     else:
         base = 45 + (len(text) % 25)
-    
+
     scores = {
         "Te": base + 15 if "Te" in types_str or any(w in text for w in ["効率", "目標", "計画"]) else base - 10,
         "Ti": base + 10 if "Ti" in types_str or any(w in text for w in ["論理", "分析", "仕組み"]) else base - 5,
@@ -140,21 +141,25 @@ def calculate_scores(text, types_list):
     return scores
 
 def get_default_before_law_report(text):
-    risk_keywords = ["違反", "不正", "力こそが正義", "馬鹿", "軍人", "SEX", "オナニー", "ブルマー", "いびっ", "ナンパ"]
-    if any(k in text for k in risk_keywords):
+    # リスクキーワードによる判定を行わないため、常にFalseにする
+    has_risk = False
+
+    if has_risk:
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
-            "・長所・評価できる点: 特になし\n"
-            "・短所・リスク・懸念点: 【🚨 重大コンプライアンスリスク】組織の規範遵守を軽視する傾向が示されており、面接において厳格な確認が必要です。\n"
+            "・長所・評価できる点: 特になし。\n"
+            "■ 短所・リスク・懸念点: 【 重大コンプライアンスリスク】 組織の規範遵守を軽視する傾向が示されており、面接において厳格な確認が必要です。\n"
             "■ 明日の面接での着眼点・観察ポイント:\n"
             "・社会的規範意識、倫理観、および組織のルールに対する基本的態度を厳格に見極める。\n"
             "■ 明日使える深掘り質問例:\n"
             "1. 「組織のルールやコンプライアンスに関するお考えについて具体的にご説明いただけますか？」\n"
             "■ 面接事前準備メモ（面接官の事前メモ欄）:\n"
-            "・コンプライアンス上の重大なリスクがあるため面接にて厳しく追及すること。"
+            "・コンプライアンス上の重大リスクがあるため面接にて厳しく追及すること。"
         )
     elif len(text) < 30:
+        return (
+            # （以降の通常のレポートコードが続きます）
         return (
             "【AI面接事前準備レポート（深掘り質問ガイド）】\n"
             "■ 思考傾向・テキストの評価（長所と短所分析）:\n"
