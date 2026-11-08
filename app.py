@@ -277,11 +277,9 @@ else:
                     selected_candidate.get("types") or 
                     selected_candidate.get("cognitive_types") or []
                 )
+                scores_dict = calculate_scores(candidate_text, candidate_types)
     except Exception as e:
         st.error(f"データ取得時にエラーが発生しました: {e}")
-                
-                scores_dict = calculate_scores(candidate_text, candidate_types)
-
                 col_left, col_right = st.columns([1.1, 1])
                 
                 with col_left:
